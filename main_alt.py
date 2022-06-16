@@ -4,7 +4,7 @@ import zipfile
 from bs4 import BeautifulSoup
 #import nltk
 #nltk.download('punkt')
-
+print("hi")
 # Unzip Jan.zip if necessary.
 def unzipContents():
     if 'Jan' not in os.listdir():
