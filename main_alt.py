@@ -2,8 +2,8 @@
 import os
 import zipfile
 from bs4 import BeautifulSoup
-import nltk
-nltk.download('punkt')
+#import nltk
+#nltk.download('punkt')
 
 # Unzip Jan.zip if necessary.
 def unzipContents():
@@ -31,12 +31,12 @@ def traverseHTML(htmlFiles):
         with open(item) as file:
             soup = BeautifulSoup(file, "html.parser")
             entry = {}
+
             # Tokenize text
-            currentFileText = nltk.word_tokenize(soup.get_text().lower())
+            currentFileText = soup.get_text().lower().split()
 
             # Strip text of numerical and stop words
             currentFileText = [word for word in currentFileText if word.isalpha() and word not in stop_words]
-
             # Tiny hack: convert current text to file
             for word in list(dict.fromkeys(currentFileText)):
                 if word not in invertedIndexDic.keys():
