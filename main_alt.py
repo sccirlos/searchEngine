@@ -1,10 +1,15 @@
+##################################################################################################
+# Created By: Srikanth Akiti, Sonya Cirlos, Jose Ruben Espinoza, Marlon Martinez, Albert Trevino #
+# Project Title: Web Search Project                                                              #
+# Date Range: Summer I 2022                                                                      #
+# Short Description: Web search engine implementation using an inverted index tables.            #
+##################################################################################################
+
 # Import necessary libraries
 import os
 import zipfile
 from bs4 import BeautifulSoup
-#import nltk
-#nltk.download('punkt')
-print("hi")
+
 # Unzip Jan.zip if necessary.
 def unzipContents():
     if 'Jan' not in os.listdir():
