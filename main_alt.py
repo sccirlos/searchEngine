@@ -23,9 +23,11 @@ def traverseHTML(htmlFiles):
     stop_words = ['a', 'an', 'the', 'of']
     invertedIndexDic = {}
     docTable = {}
-
+    currentSpotChecker = range(len(htmlFiles))
+    location = 0
+    corpus = []
     for item in htmlFiles:
-
+        currentSpot = htmlFiles.index(item)
         docTable[item] = {
             'doc vec length': 0,
             'max freq': 0,
@@ -35,7 +37,6 @@ def traverseHTML(htmlFiles):
 
         with open(item) as file:
             soup = BeautifulSoup(file, "html.parser")
-            entry = {}
 
             # Tokenize text
             currentFileText = soup.get_text().lower().split()
@@ -47,12 +48,14 @@ def traverseHTML(htmlFiles):
                 if word not in invertedIndexDic.keys():
                     invertedIndexDic[word] = {
                         'df': 1,
-                        'link': []
+                        'link': [item]
                     }
                 else:
                     invertedIndexDic[word]['df'] += 1
+                    if item not in invertedIndexDic[word]['link']:
+                        invertedIndexDic[word]['link'].append(item)
 
-                    #invertedIndexDic[word]['link'].append(1)
+                    # invertedIndexDic[word]['link'].append(1)
     return invertedIndexDic, docTable
 
 def webSearch(doc):
@@ -76,7 +79,11 @@ if __name__ == '__main__':
 
     # Store HTML files into a Dic
     completeDocumentsDic = traverseHTML(allHTMLFiles)
-    print(completeDocumentsDic[0])
-    print(completeDocumentsDic[1])
+    print(completeDocumentsDic)
+    for key, value in completeDocumentsDic[0].items():
+        print(str(key) + " " + str(value.items()))
+    #print(completeDocumentsDic)
+    #print(completeDocumentsDic[1])
+    #print(completeDocumentsDic[0]['cat'])
     # Engine
     #webSearch(completeDocumentsDic)
