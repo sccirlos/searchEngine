@@ -48,12 +48,14 @@ def traverseHTML(htmlFiles):
                 if word not in invertedIndexDic.keys():
                     invertedIndexDic[word] = {
                         'df': 1,
-                        'link': [item]
+                        'link': [[item, currentFileText.count(word)]]
                     }
                 else:
                     invertedIndexDic[word]['df'] += 1
                     if item not in invertedIndexDic[word]['link']:
-                        invertedIndexDic[word]['link'].append(item)
+                        invertedIndexDic[word]['link'].append([item, currentFileText.count(word)])
+                    #else:
+                    #    invertedIndexDic[word]['link'][1 += 1
 
                     # invertedIndexDic[word]['link'].append(1)
     return invertedIndexDic, docTable
@@ -79,7 +81,7 @@ if __name__ == '__main__':
 
     # Store HTML files into a Dic
     completeDocumentsDic = traverseHTML(allHTMLFiles)
-    print(completeDocumentsDic)
+    #print(completeDocumentsDic)
     for key, value in completeDocumentsDic[0].items():
         print(str(key) + " " + str(value.items()))
     #print(completeDocumentsDic)
