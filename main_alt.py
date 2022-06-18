@@ -64,9 +64,10 @@ def webSearch(doc):
     print("Now the search beings:")
     keysearch = input("enter a search key=>")
     while (keysearch != ""):
-        for key, value in doc.items():
-            if " " + keysearch + " " in value:
-                print("found a match: ./cheDoc/"+str(key))
+        print(doc[0][keysearch])
+        #for key, value in doc.items():
+        #    if " " + keysearch + " " in value:
+        #        print("found a match: ./cheDoc/"+str(key))
         keysearch = input("enter a search key=>")
     print("Bye")
 
@@ -84,8 +85,8 @@ if __name__ == '__main__':
     #print(completeDocumentsDic)
     for key, value in completeDocumentsDic[0].items():
         print(str(key) + " " + str(value.items()))
-    #print(completeDocumentsDic)
+    print(completeDocumentsDic[0])
     #print(completeDocumentsDic[1])
     #print(completeDocumentsDic[0]['cat'])
     # Engine
-    #webSearch(completeDocumentsDic)
+    webSearch(completeDocumentsDic)
