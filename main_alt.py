@@ -64,7 +64,9 @@ def webSearch(doc):
     print("Now the search beings:")
     keysearch = input("enter a search key=>")
     while (keysearch != ""):
-        print(doc[0][keysearch]['link'])
+        keysearch = keysearch.split()
+        for thing in keysearch:
+            print(doc[0][thing]['link'])
         #for key, value in doc.items():
         #    if " " + keysearch + " " in value:
         #        print("found a match: ./cheDoc/"+str(key))
