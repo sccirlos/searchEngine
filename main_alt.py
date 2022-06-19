@@ -10,7 +10,7 @@ import os
 import zipfile
 from bs4 import BeautifulSoup
 
-# Unzip Jan.zip if necessary.
+# Unzip Jan.zip if necessary. "Folder already there..." prints if the extracted folder is already present.
 def unzipContents():
     if 'Jan' not in os.listdir():
         with zipfile.ZipFile('cheDoc.zip', 'r') as zip_ref:
@@ -20,14 +20,15 @@ def unzipContents():
 
 # Traverse HTML files, returns a inverted index hash table.
 def traverseHTML(htmlFiles):
-    stop_words = ['a', 'an', 'the', 'of']
+
+    stop_words = ['a', 'an', 'the', 'of'] # removal of stop words
     invertedIndexDic = {}
     docTable = {}
-    currentSpotChecker = range(len(htmlFiles))
-    location = 0
-    corpus = []
+
+    # Begin creating inverted index and document list (stored in docTable) hash maps.
     for item in htmlFiles:
-        currentSpot = htmlFiles.index(item)
+
+        # Initialize the creation of the document list.
         docTable[item] = {
             'doc vec length': 0,
             'max freq': 0,
@@ -48,17 +49,16 @@ def traverseHTML(htmlFiles):
                 if word not in invertedIndexDic.keys():
                     invertedIndexDic[word] = {
                         'df': 1,
-                        'link': [[item, currentFileText.count(word)]]
+                        'link': [[item, currentFileText.count(word), [index for index, item in enumerate(currentFileText) if item == word]]]
                     }
                 else:
                     invertedIndexDic[word]['df'] += 1
                     if item not in invertedIndexDic[word]['link']:
-                        invertedIndexDic[word]['link'].append([item, currentFileText.count(word)])
-                    #else:
-                    #    invertedIndexDic[word]['link'][1 += 1
-
-                    # invertedIndexDic[word]['link'].append(1)
+                        invertedIndexDic[word]['link'].append([item, currentFileText.count(word),[index for index, item in enumerate(currentFileText) if item == word]])
+                docTable[item]['max freq'] = max([1, 2])
     return invertedIndexDic, docTable
+def phrsalQuery(s_):
+    return s_
 
 def webSearch(doc):
     print("Now the search beings:")
@@ -72,6 +72,7 @@ def webSearch(doc):
         #        print("found a match: ./cheDoc/"+str(key))
         keysearch = input("enter a search key=>")
     print("Bye")
+    print(phrsalQuery(hi))
 
 if __name__ == '__main__':
     unzipContents()
@@ -87,8 +88,8 @@ if __name__ == '__main__':
     #print(completeDocumentsDic)
     for key, value in completeDocumentsDic[0].items():
         print(str(key) + " " + str(value.items()))
-    print(completeDocumentsDic[0])
+    print(completeDocumentsDic[1])
     #print(completeDocumentsDic[1])
     #print(completeDocumentsDic[0]['cat'])
     # Engine
-    webSearch(completeDocumentsDic)
+    #webSearch(completeDocumentsDic)
