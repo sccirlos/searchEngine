@@ -4,8 +4,16 @@
 # Date Range: Summer I 2022                                                                      #
 # Short Description: Web search engine implementation using an inverted index tables.            #
 ##################################################################################################
+# import libraries for UI
+import sys
+from PyQt5.uic import mainwindow
+from PyQt5.uic import searchResultsUI
+from PyQt5 import QtWidgets
+from PyQt5.QtWidgets import QDialog, QApplication, QWidget
 
-# Import necessary libraries
+
+
+# Import necessary libraries for search engine
 import os
 import zipfile
 from bs4 import BeautifulSoup

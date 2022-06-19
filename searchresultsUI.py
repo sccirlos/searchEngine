@@ -7,7 +7,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 
 class Ui_resultsUI(object):
     def setupUi(self, resultsUI):
-        resultsUI.setObjectName("resultsUI")
+        resultsUI.setObjectName("Results")
         resultsUI.resize(800, 600)
         self.label = QtWidgets.QLabel(resultsUI)
         self.label.setGeometry(QtCore.QRect(40, 30, 201, 31))
