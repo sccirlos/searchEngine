@@ -44,6 +44,7 @@ def traverseHTML(htmlFiles):
 
             # Strip text of numerical and stop words
             currentFileText = [word for word in currentFileText if word.isalpha() and word not in stop_words]
+
             # Tiny hack: convert current text to file
             for word in list(dict.fromkeys(currentFileText)):
                 if word not in invertedIndexDic.keys():
@@ -55,16 +56,30 @@ def traverseHTML(htmlFiles):
                     invertedIndexDic[word]['df'] += 1
                     if item not in invertedIndexDic[word]['link']:
                         invertedIndexDic[word]['link'].append([item, currentFileText.count(word),[index for index, item in enumerate(currentFileText) if item == word]])
-                docTable[item]['max freq'] = max([1, 2])
+
+            docTable[item]['max freq'] = max([list(value['link'])[0][1] for key, value in invertedIndexDic.items() if list(value['link'])[0][0] == item])
+
+            for entry in [value['link'] for key, value in invertedIndexDic.items()]:
+                for subEntry in entry:
+                    if docTable[item]['max freq'] < subEntry[1] and subEntry[0] == item:
+                        docTable[item]['max freq'] = subEntry[1]
+                    #print(subEntry)
+            #print([value['link'] for key, value in invertedIndexDic.items()])
+            print(":::::")
+
     return invertedIndexDic, docTable
-def phrsalQuery(s_):
-    return s_
+
+def phrsalQuery(query):
+    if "or" or "and" or "but" in query.split():
+        print("boolean search")
+    #return s_
 
 def webSearch(doc):
     print("Now the search beings:")
     keysearch = input("enter a search key=>")
     while (keysearch != ""):
         keysearch = keysearch.split()
+        phrsalQuery(keysearch)
         for thing in keysearch:
             print(doc[0][thing]['link'])
         #for key, value in doc.items():
@@ -72,7 +87,6 @@ def webSearch(doc):
         #        print("found a match: ./cheDoc/"+str(key))
         keysearch = input("enter a search key=>")
     print("Bye")
-    print(phrsalQuery(hi))
 
 if __name__ == '__main__':
     unzipContents()
@@ -86,9 +100,9 @@ if __name__ == '__main__':
     # Store HTML files into a Dic
     completeDocumentsDic = traverseHTML(allHTMLFiles)
     #print(completeDocumentsDic)
-    for key, value in completeDocumentsDic[0].items():
+    for key, value in completeDocumentsDic[1].items():
         print(str(key) + " " + str(value.items()))
-    print(completeDocumentsDic[1])
+    print(completeDocumentsDic[0])
     #print(completeDocumentsDic[1])
     #print(completeDocumentsDic[0]['cat'])
     # Engine
