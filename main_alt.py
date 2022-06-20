@@ -9,6 +9,7 @@
 import os
 import zipfile
 from bs4 import BeautifulSoup
+from math import log2
 
 # Unzip Jan.zip if necessary. "Folder already there..." prints if the extracted folder is already present.
 def unzipContents():
@@ -22,6 +23,8 @@ def unzipContents():
 def traverseHTML(htmlFiles):
 
     stop_words = ['a', 'an', 'the', 'of'] # removal of stop words
+    numOfDocuments = len(htmlFiles)
+
     invertedIndexDic = {}
     docTable = {}
 
@@ -47,25 +50,38 @@ def traverseHTML(htmlFiles):
 
             # Tiny hack: convert current text to file
             for word in list(dict.fromkeys(currentFileText)):
+                # Here we build up our inverted index table.
                 if word not in invertedIndexDic.keys():
                     invertedIndexDic[word] = {
                         'df': 1,
-                        'link': [[item, currentFileText.count(word), [index for index, item in enumerate(currentFileText) if item == word]]]
+                        'link': [[item, currentFileText.count(word),
+                                  [index for index, item in enumerate(currentFileText) if item == word],
+                                  0]]
                     }
                 else:
                     invertedIndexDic[word]['df'] += 1
                     if item not in invertedIndexDic[word]['link']:
-                        invertedIndexDic[word]['link'].append([item, currentFileText.count(word),[index for index, item in enumerate(currentFileText) if item == word]])
-
-            docTable[item]['max freq'] = max([list(value['link'])[0][1] for key, value in invertedIndexDic.items() if list(value['link'])[0][0] == item])
-
+                        invertedIndexDic[word]['link'].append([item, currentFileText.count(word),
+                                                               [index for index, item in enumerate(currentFileText)
+                                                                if item == word],
+                                                               0])
+            # Update max freq in docTable
             for entry in [value['link'] for key, value in invertedIndexDic.items()]:
                 for subEntry in entry:
                     if docTable[item]['max freq'] < subEntry[1] and subEntry[0] == item:
                         docTable[item]['max freq'] = subEntry[1]
-                    #print(subEntry)
-            #print([value['link'] for key, value in invertedIndexDic.items()])
-            print(":::::")
+
+
+    # Updated
+    for key, value in invertedIndexDic.items():
+        df = invertedIndexDic[key]['df']
+        for entry in value['link']:
+            docOfIntrest =  entry[0]
+            maxfreq = docTable[docOfIntrest]['max freq']
+            freq = entry[1]
+            idf = log2(numOfDocuments/(df + 1)) + 1
+            entry[3] = (freq/maxfreq) * idf
+
 
     return invertedIndexDic, docTable
 
@@ -79,7 +95,7 @@ def webSearch(doc):
     keysearch = input("enter a search key=>")
     while (keysearch != ""):
         keysearch = keysearch.split()
-        phrsalQuery(keysearch)
+        #phrsalQuery(keysearch)
         for thing in keysearch:
             print(doc[0][thing]['link'])
         #for key, value in doc.items():
@@ -100,9 +116,12 @@ if __name__ == '__main__':
     # Store HTML files into a Dic
     completeDocumentsDic = traverseHTML(allHTMLFiles)
     #print(completeDocumentsDic)
+    for key, value in completeDocumentsDic[0].items():
+        print(str(key) + " " + str(value.items()))
+
     for key, value in completeDocumentsDic[1].items():
         print(str(key) + " " + str(value.items()))
-    print(completeDocumentsDic[0])
+    #print(completeDocumentsDic[1])
     #print(completeDocumentsDic[1])
     #print(completeDocumentsDic[0]['cat'])
     # Engine
