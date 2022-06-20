@@ -86,6 +86,55 @@ def traverseHTML(htmlFiles):
 
     return invertedIndexDic, docTable
 
+#this function will search for phrases based on the users input
+def phraseSearch(doc):
+    listwords=[]
+
+    print("Now the search beings:")
+    keysearch = input("enter a search key, quit by hitting enter twice=>")
+    while (keysearch != ""):
+        keysearch = keysearch.split()
+        for word in keysearch:
+            #print(doc[0][word]['link'])
+            listwords.append(doc[0][word]['link'])
+        listwords = tuple(listwords)
+        print("type of listwords: ", type(listwords))
+        print("list of all words in list: ", listwords)
+
+        intersectionlist=()
+        #this will iterate though out the whole list to compare the documents and only get the ones that
+        #are needed in order to get the best ranked documents for the phrasal search
+        for link in listwords:
+            print("THIS IS I: ", link)
+            for data in link:
+                print("this is J: ", data[0])
+                if(listwords[link][data] == listwords[link+1][data+1]):
+                    intersectionlist = data[0]
+
+        print("SHOULD BE ONLY INTERSECTION DOCTUMETNS", intersectionlist)
+        #compare the documents based on the ones that are the same
+
+        #print(type(cleanlist))
+
+       # for item in range(len(listwords) - 1):
+        #    temp= set(listwords[item] & set(listwords[item+1]))
+         #   interlist = interlist & temp
+        #print(interlist)
+
+        #1st is the 1st word[0]
+        #2nd [0] is the list of documents of the word
+        #3rd [0] is only the documments of that word??
+
+        #print("dog: ", listwords[0][0])
+        #print("cat: ", listwords[1])
+
+        # for key, value in doc.items():
+        #    if " " + keysearch + " " in value:
+        #        print("found a match: ./cheDoc/"+str(key))
+
+        keysearch = input("enter a search key=>")
+    print("Bye")
+
 
 
 #def cosineSimRanking(query,relevantDocs):
@@ -95,9 +144,44 @@ def webSearch(doc):
     keysearch = input("enter a search key=>")
     while (keysearch != ""):
         keysearch = keysearch.split()
-        #phrsalQuery(keysearch)
+        phraseSearch(keysearch)
+        
+        '''Traverses through the list if the word matches and,or, or but it'll
+        conduct the boolean search. Currently only works with 2 terms'''
         for thing in keysearch:
-            print(doc[0][thing]['link'])
+    
+            if 'and' in keysearch:
+                index = keysearch.index('and')
+                term1 = keysearch[index-1]
+                term2 = keysearch[index+1]
+                if term1 and term2 in doc[0]:
+                    print(doc[0][term1]['link'])
+                    print(doc[0][term2]['link'])
+
+                    break;
+                            
+
+            elif 'or' in keysearch:
+                index = keysearch.index('or')
+                term1 = keysearch[index-1]
+                term2 = keysearch[index+1]
+                if term1 or term2 in doc[0]:
+                    print(doc[0][term1]['link'])
+                else:
+                    print(doc[0][term2]['link'])
+                    break;
+                            
+
+            elif 'but' in keysearch:
+                index = keysearch.index('but')
+                term1 = keysearch[index-1]
+                term2 = keysearch[index+1]
+                print(doc[0][term1]['link'])
+                break;
+                            
+
+            else:
+                print(doc[0][thing]['link'])
         keysearch = input("enter a search key=>")
     print("Bye")
 
