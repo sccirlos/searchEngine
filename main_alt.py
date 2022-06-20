@@ -20,10 +20,10 @@ from math import log2
 
 
 # adding mainwindow
-class MainWindow(QMainWindow):
+class Ui_MainWindow(QMainWindow, mainwindow.Ui_MainWindow):
     def __init__(self):
-       super(MainWindow, self).__init__()
-       self.setupUi(self)
+      super().__init__()
+      self.setupUi(self)
 
 
 
@@ -127,7 +127,7 @@ def phraseSearch(doc):
                 if(listwords[link][data] == listwords[link+1][data+1]):
                     intersectionlist = data[0]
 
-        print("SHOULD BE ONLY INTERSECTION DOCTUMETNS", intersectionlist)
+        print("SHOULD BE ONLY INTERSECTION DOCUMENTS", intersectionlist)
         #compare the documents based on the ones that are the same
 
         #print(type(cleanlist))
@@ -156,7 +156,7 @@ def phraseSearch(doc):
 #def cosineSimRanking(query,relevantDocs):
 
 def webSearch(doc):
-    print("Now the search beings:")
+    print("Now the search begins:")
     keysearch = input("enter a search key=>")
     while (keysearch != ""):
         keysearch = keysearch.split()
@@ -202,18 +202,18 @@ def webSearch(doc):
     print("Bye")
 
 if __name__ == '__main__':
-    unzipContents()
+   # unzipContents()
 
     # Obtain all files in Jan directory
-    allHTMLFiles = os.listdir('Jan')
+    #allHTMLFiles = os.listdir('Jan')
 
     # cd into new Jan directory.
-    os.chdir("Jan")
+  #  os.chdir("Jan")
 
     # Store HTML files into a Dic
-    completeDocumentsDic = traverseHTML(allHTMLFiles)
+   # completeDocumentsDic = traverseHTML(allHTMLFiles)
 
-    webSearch(completeDocumentsDic)
+    #webSearch(completeDocumentsDic)
     
     #print(completeDocumentsDic[1])
     #print(completeDocumentsDic[1])
@@ -221,10 +221,10 @@ if __name__ == '__main__':
   
 
 
-    #if __name__ == "__main__":
+#if __name__ == "__main__":
     # App Stuff
-   # app = QApplication(sys.argv)
-    #w = Ui_MainWindow()
-    #w.show()
-   # sys.exit(app.exec_())
-    #
+    app = QApplication(sys.argv)
+    ui = Ui_MainWindow()
+    ui.show()
+    sys.exit(app.exec_())
+    
