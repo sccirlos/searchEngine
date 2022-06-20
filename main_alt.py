@@ -8,7 +8,7 @@
 import sys
 import mainwindow
 import searchresultsUI
-from PyQt5.QtWidgets import QDialog, QApplication, QWidget, QMainWindow
+from PyQt5.QtWidgets import QDialog, QApplication, QWidget, QMainWindow, QStackedWidget
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 
@@ -24,6 +24,22 @@ class Ui_MainWindow(QMainWindow, mainwindow.Ui_MainWindow):
     def __init__(self):
       super().__init__()
       self.setupUi(self)
+      self.pushButton.clicked.connect(self.gotoSearch) # when search button is clicked it will connect to gotosearch()
+
+    def gotoSearch(self):
+        results = Ui_resultsUI()
+        widget.addWidget(results)
+        widget.setCurrentIndex(widget.currentIndex()+1) #stack of screens
+        
+    
+#define the class pushbutton?
+class Ui_resultsUI(QDialog, searchresultsUI.Ui_resultsUI):
+    def __init__(self):
+        super().__init__()
+        self.setupUi(self)
+        
+
+
 
 
 
@@ -222,9 +238,13 @@ if __name__ == '__main__':
 
 
 #if __name__ == "__main__":
-    # App Stuff
+    # App execution
     app = QApplication(sys.argv)
-    ui = Ui_MainWindow()
-    ui.show()
+    mainui = Ui_MainWindow()
+    widget = QStackedWidget()
+    widget.addWidget(mainui)
+    widget.setFixedHeight(600)
+    widget.setFixedWidth(800)
+    widget.show()
     sys.exit(app.exec_())
     
