@@ -14,7 +14,7 @@ from math import log2
 # Unzip Jan.zip if necessary. "Folder already there..." prints if the extracted folder is already present.
 def unzipContents():
     if 'Jan' not in os.listdir():
-        with zipfile.ZipFile('cheDoc.zip', 'r') as zip_ref:
+        with zipfile.ZipFile('Jan.zip', 'r') as zip_ref:
             zip_ref.extractall()
     else:
         print("Folder already there...")
@@ -35,7 +35,7 @@ def traverseHTML(htmlFiles):
         docTable[item] = {
             'doc vec length': 0,
             'max freq': 0,
-            'url': str("./cheDoc/"+str(item))
+            'url': str("./Jan/"+str(item))
 
         }
 
@@ -71,17 +71,18 @@ def traverseHTML(htmlFiles):
                     if docTable[item]['max freq'] < subEntry[1] and subEntry[0] == item:
                         docTable[item]['max freq'] = subEntry[1]
 
-
-    # Updated
+    # Update inverted index table to have tf-idf values
     for key, value in invertedIndexDic.items():
         df = invertedIndexDic[key]['df']
         for entry in value['link']:
-            docOfIntrest =  entry[0]
+            docOfIntrest = entry[0]
             maxfreq = docTable[docOfIntrest]['max freq']
             freq = entry[1]
             idf = log2(numOfDocuments/(df + 1)) + 1
-            entry[3] = (freq/maxfreq) * idf
-
+            tf_idf = (freq/maxfreq) * idf
+            entry[3] = tf_idf
+            docTable[docOfIntrest]['doc vec length'] += (tf_idf * tf_idf)
+            print(tf_idf)
 
     return invertedIndexDic, docTable
 
@@ -89,6 +90,8 @@ def phrsalQuery(query):
     if "or" or "and" or "but" in query.split():
         print("boolean search")
     #return s_
+
+#def cosineSimRanking(query,relevantDocs):
 
 def webSearch(doc):
     print("Now the search beings:")
@@ -108,21 +111,12 @@ if __name__ == '__main__':
     unzipContents()
 
     # Obtain all files in Jan directory
-    allHTMLFiles = os.listdir('cheDoc')
+    allHTMLFiles = os.listdir('Jan')
 
     # cd into new Jan directory.
-    os.chdir("cheDoc")
+    os.chdir("Jan")
 
     # Store HTML files into a Dic
     completeDocumentsDic = traverseHTML(allHTMLFiles)
-    #print(completeDocumentsDic)
-    for key, value in completeDocumentsDic[0].items():
-        print(str(key) + " " + str(value.items()))
 
-    for key, value in completeDocumentsDic[1].items():
-        print(str(key) + " " + str(value.items()))
-    #print(completeDocumentsDic[1])
-    #print(completeDocumentsDic[1])
-    #print(completeDocumentsDic[0]['cat'])
-    # Engine
-    #webSearch(completeDocumentsDic)
+    webSearch(completeDocumentsDic)
