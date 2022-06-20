@@ -82,14 +82,11 @@ def traverseHTML(htmlFiles):
             tf_idf = (freq/maxfreq) * idf
             entry[3] = tf_idf
             docTable[docOfIntrest]['doc vec length'] += (tf_idf * tf_idf)
-            print(tf_idf)
+            #print(tf_idf)
 
     return invertedIndexDic, docTable
 
-def phrsalQuery(query):
-    if "or" or "and" or "but" in query.split():
-        print("boolean search")
-    #return s_
+
 
 #def cosineSimRanking(query,relevantDocs):
 
@@ -101,9 +98,6 @@ def webSearch(doc):
         #phrsalQuery(keysearch)
         for thing in keysearch:
             print(doc[0][thing]['link'])
-        #for key, value in doc.items():
-        #    if " " + keysearch + " " in value:
-        #        print("found a match: ./cheDoc/"+str(key))
         keysearch = input("enter a search key=>")
     print("Bye")
 
