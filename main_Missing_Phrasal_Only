@@ -131,87 +131,92 @@ def phrasalSearch(query, invertedIndex, docTable):
     :return: List of lists, by correlationg rank.
     """
     query = query[1:len(query) - 1].lower().strip().split()
+
     if checkIndex(query,invertedIndex):
-        print("Continue")
         if len(query) == 1:
-            print(' '.join(query))
-            booleanSearch(' '.join(query), invertedIndex, docTable)
-            return
+            return booleanSearch(''.join(query), invertedIndex, docTable)
+        else:
+            # this needs to be completed
+            return "actual phrasal code goes here"
     else:
-        "Last entry not valid."
-    return 0
+        return "Last entry not valid."
 
 def booleanSearch(query, invertedIndex, docTable):
-    query = query.split()
-    if "and" in query:
-        relevantDocsTemp = []
-        toBeCleaned = []
-        print("Conducting AND query...")
-        # Get intersecting document set first
-        for word in query:
-            if word != "and":
-                relevantDocsTemp.append([entry[0] for entry in invertedIndex[word]['link']])
-                toBeCleaned.append([[entry[0], entry[3]] for entry in invertedIndex[word]['link']])
-        intersectingDocs = set(relevantDocsTemp[0])
-        for doc in relevantDocsTemp:
-            intersectingDocs = intersectingDocs & set(doc)
-        intersectingDocs = list(intersectingDocs)
+    if type(query) != list():
+        query = query.split()
 
-        finalOutWithRanking = {}
-        for entry in sum(toBeCleaned,[]):
-            if entry[0] not in finalOutWithRanking:
-                if entry[0] in intersectingDocs:
-                    finalOutWithRanking[entry[0]] = entry[1]
-            else:
-                finalOutWithRanking[entry[0]] += entry[1]
-        return list(map(list, sorted(list(finalOutWithRanking.items()),key=rankBySecondElem,reverse=True)))
-    elif "but" in query:
-        relevantDocsTemp = []
-        removingDocs = []
-        print("Conducting BUT query...")
+    if checkIndex(query, invertedIndex):
+        if "and" in query:
+            relevantDocsTemp = []
+            toBeCleaned = []
+            print("Conducting AND query...")
+            # Get intersecting document set first
+            for word in query:
+                if word != "and":
+                    relevantDocsTemp.append([entry[0] for entry in invertedIndex[word]['link']])
+                    toBeCleaned.append([[entry[0], entry[3]] for entry in invertedIndex[word]['link']])
+            intersectingDocs = set(relevantDocsTemp[0])
+            for doc in relevantDocsTemp:
+                intersectingDocs = intersectingDocs & set(doc)
+            intersectingDocs = list(intersectingDocs)
 
-        locationOfBut = query.index("but")
-        leftSideOfQuery = query[:locationOfBut]
-        rightideOfQuery = query[locationOfBut + 1:]
+            finalOutWithRanking = {}
+            for entry in sum(toBeCleaned,[]):
+                if entry[0] not in finalOutWithRanking:
+                    if entry[0] in intersectingDocs:
+                        finalOutWithRanking[entry[0]] = entry[1]
+                else:
+                    finalOutWithRanking[entry[0]] += entry[1]
+            return list(map(list, sorted(list(finalOutWithRanking.items()),key=rankBySecondElem,reverse=True)))
+        elif "but" in query:
+            relevantDocsTemp = []
+            removingDocs = []
+            print("Conducting BUT query...")
 
-        # Get documents that must be in INCLUDED
-        for word in leftSideOfQuery:
-            relevantDocsTemp.append([[entry[0], entry[3]] for entry in invertedIndex[word]['link']])
-        relevantDocsTemp = sum(relevantDocsTemp, [])
+            locationOfBut = query.index("but")
+            leftSideOfQuery = query[:locationOfBut]
+            rightideOfQuery = query[locationOfBut + 1:]
 
-        # Get documents that must be REMOVED
-        for word in rightideOfQuery:
-            removingDocs.append([entry[0] for entry in invertedIndex[word]['link']])
-        removingDocs = sum(removingDocs, [])
-        relevantDocs = [finalDocs for finalDocs in relevantDocsTemp if finalDocs[0] not in removingDocs]
-
-        # final Ranking
-        finalOutWithRanking = {}
-        for entry in relevantDocs:
-            if entry[0] not in finalOutWithRanking:
-                finalOutWithRanking[entry[0]] = entry[1]
-            else:
-                finalOutWithRanking[entry[0]] += entry[1]
-        # Note, dictionary was converted into a list of tuples, the finally a list of lists. This is done
-        # in order to ensure consistency with the output in phrasal search.
-        return list(map(list, sorted(list(finalOutWithRanking.items()),key=rankBySecondElem,reverse=True)))
-
-    else:
-        print("Conducting OR query...")
-        relevantDocsTemp = []
-        for word in query:
-            if word != "or":
+            # Get documents that must be in INCLUDED
+            for word in leftSideOfQuery:
                 relevantDocsTemp.append([[entry[0], entry[3]] for entry in invertedIndex[word]['link']])
-        relevantDocsTemp = sum(relevantDocsTemp,[]) # flatten a 2d array
-        relevantDocs = {}  # using dictionary for ease of merging and updating correlations
-        for entry in relevantDocsTemp:
-            if entry[0] not in relevantDocs:
-                relevantDocs[entry[0]] = entry[1]
-            else:
-                relevantDocs[entry[0]] += entry[1]
-        # Note, dictionary was converted into a list of tuples, the finally a list of lists. This is done
-        # in order to ensure consistency with the output in phrasal search.
-        return list(map(list, sorted(list(relevantDocs.items()),key=rankBySecondElem,reverse=True)))
+            relevantDocsTemp = sum(relevantDocsTemp, [])
+
+            # Get documents that must be REMOVED
+            for word in rightideOfQuery:
+                removingDocs.append([entry[0] for entry in invertedIndex[word]['link']])
+            removingDocs = sum(removingDocs, [])
+            relevantDocs = [finalDocs for finalDocs in relevantDocsTemp if finalDocs[0] not in removingDocs]
+
+            # final Ranking
+            finalOutWithRanking = {}
+            for entry in relevantDocs:
+                if entry[0] not in finalOutWithRanking:
+                    finalOutWithRanking[entry[0]] = entry[1]
+                else:
+                    finalOutWithRanking[entry[0]] += entry[1]
+            # Note, dictionary was converted into a list of tuples, the finally a list of lists. This is done
+            # in order to ensure consistency with the output in phrasal search.
+            return list(map(list, sorted(list(finalOutWithRanking.items()),key=rankBySecondElem,reverse=True)))
+        else:
+            print("Conducting OR query...")
+            print(query)
+            relevantDocsTemp = []
+            for word in query:
+                if word != "or":
+                    relevantDocsTemp.append([[entry[0], entry[3]] for entry in invertedIndex[word]['link']])
+            relevantDocsTemp = sum(relevantDocsTemp,[]) # flatten a 2d array
+            relevantDocs = {}  # using dictionary for ease of merging and updating correlations
+            for entry in relevantDocsTemp:
+                if entry[0] not in relevantDocs:
+                    relevantDocs[entry[0]] = entry[1]
+                else:
+                    relevantDocs[entry[0]] += entry[1]
+            # Note, dictionary was converted into a list of tuples, the finally a list of lists. This is done
+            # in order to ensure consistency with the output in phrasal search.
+            return list(map(list, sorted(list(relevantDocs.items()),key=rankBySecondElem,reverse=True)))
+    else:
+        return "Your word is not in the inverted index."
 
 def checkIndex(query, invertedIndex):
     """
@@ -221,7 +226,7 @@ def checkIndex(query, invertedIndex):
     :return: True if words can be found, false otherwise.
     """
     for word in query:
-        if word != "and" or word != "or":
+        if word != "and" or word != "or" or word != "but":
             if word not in invertedIndex:
                 print(word + " not a valid entry")
                 return False
