@@ -8,53 +8,62 @@
 import sys
 import mainwindow
 import searchresultsUI
-from PyQt5.QtWidgets import QDialog, QApplication, QWidget, QMainWindow, QStackedWidget
+from PyQt5.QtWidgets import QDialog, QApplication, QWidget, QMainWindow, QStackedWidget, QLineEdit
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 
 # Import necessary libraries
 import os
-import zipfile
+from zipfile import ZipFile
 from bs4 import BeautifulSoup
-from math import log2
+from math import log2, sqrt
 
 
-# adding mainwindow
+
+# adding mainwindow screen
 class Ui_MainWindow(QMainWindow, mainwindow.Ui_MainWindow):
     def __init__(self):
       super().__init__()
       self.setupUi(self)
-      self.pushButton.clicked.connect(self.gotoSearch) # when search button is clicked it will connect to gotosearch()
+     
+      self.pushButton.clicked.connect(self.gotoSearchPage)
+      self.pushButton.clicked.connect(self.getQueryandSearch) # when search button is clicked it will connect to gotosearch()
 
-    def gotoSearch(self):
+
+    def gotoSearchPage(self):
         results = Ui_resultsUI()
         widget.addWidget(results)
         widget.setCurrentIndex(widget.currentIndex()+1) #stack of screens
+
+    def getQueryandSearch(self, doc):
+          # get query input
+        query = self.lineEdit.text()
         
-    
-#define the class pushbutton?
+
+# displays results like completedocumentdictionary  
+# results screen needs a go back to search button or something
 class Ui_resultsUI(QDialog, searchresultsUI.Ui_resultsUI):
     def __init__(self):
         super().__init__()
         self.setupUi(self)
+        #self.pushButton.clicked.connect(self.getuserQuery)
         
+   
 
+# Store zip file in archive
+archive = ZipFile('cheDoc.zip', 'r')
 
-
-
-
- # Unzip Jan.zip if necessary. "Folder already there..." prints if the extracted folder is already present.
-def unzipContents():
-    if 'Jan' not in os.listdir():
-        with zipfile.ZipFile('Jan.zip', 'r') as zip_ref:
-            zip_ref.extractall()
-    else:
-        print("Folder already there...")
 
 # Traverse HTML files, returns a inverted index hash table.
 def traverseHTML(htmlFiles):
+    
+    # Traverse html files returning inverted index table and a document table
+    # :param htmlFiles: Given zip file containing html files.
+    # :return: inverted index table and document table
+    
+    # Removal of stop words to be used later.
+    stop_words = ['a', 'an', 'the', 'of']
 
-    stop_words = ['a', 'an', 'the', 'of'] # removal of stop words
     numOfDocuments = len(htmlFiles)
 
     invertedIndexDic = {}
@@ -67,21 +76,21 @@ def traverseHTML(htmlFiles):
         docTable[item] = {
             'doc vec length': 0,
             'max freq': 0,
-            'url': str("./Jan/"+str(item))
-
+            'url': str("./cheDoc/"+str(item))
         }
 
         with open(item) as file:
             soup = BeautifulSoup(file, "html.parser")
 
-            # Tokenize text
+            # Tokenize and lower all text
             currentFileText = soup.get_text().lower().split()
 
-            # Strip text of numerical and stop words
+            # Uses list comprehension to strip text of numerical and stop words.
             currentFileText = [word for word in currentFileText if word.isalpha() and word not in stop_words]
 
-            # Tiny hack: convert current text to file
+            # Tiny hack: Get unique words from currentFileText then build index table
             for word in list(dict.fromkeys(currentFileText)):
+
                 # Here we build up our inverted index table.
                 if word not in invertedIndexDic.keys():
                     invertedIndexDic[word] = {
@@ -97,7 +106,7 @@ def traverseHTML(htmlFiles):
                                                                [index for index, item in enumerate(currentFileText)
                                                                 if item == word],
                                                                0])
-            # Update max freq in docTable
+            # Update 'max freq' in docTable
             for entry in [value['link'] for key, value in invertedIndexDic.items()]:
                 for subEntry in entry:
                     if docTable[item]['max freq'] < subEntry[1] and subEntry[0] == item:
@@ -113,131 +122,160 @@ def traverseHTML(htmlFiles):
             idf = log2(numOfDocuments/(df + 1)) + 1
             tf_idf = (freq/maxfreq) * idf
             entry[3] = tf_idf
-            docTable[docOfIntrest]['doc vec length'] += (tf_idf * tf_idf)
-            #print(tf_idf)
 
+    # Update doc vector lengths within docTable
+    for doc in htmlFiles:
+        for key, value in invertedIndexDic.items():
+            for linkData in value['link']:
+                if linkData[0] == doc:
+                    docTable[doc]['doc vec length'] += (linkData[3] * linkData[3])
     return invertedIndexDic, docTable
 
+
+
+def rankBySecondElem(list):
+    # Helper function to be used in cosineSimRanking.
+    # :param list: list of the form [[docid1, rankingScore1], [docod2, rankingScore2]...
+    # :return: Sorted list by second entry.
+    return list[1]
+
+
+def cosineSimRanking(intrestedPhrase, relevantDocs):
+    # Ranks preform cosine similarity ranking.
+    # :param intrestedPhrase: User query must be preprocessed as a list of words
+    # :param relevantDocs: Hash table of document information
+    # :return: Sorted rank list with entries [docid, cosine similarity score].
+    rankedList = []
+    for key, value in relevantDocs[1].items():
+        normalization = 1 / sqrt(value['doc vec length'])
+        summationList = []
+        for word in intrestedPhrase:
+            summationList.append([num[3] for num in relevantDocs[0][word]['link'] if num[0] == key])
+        # flatten summationList, then sum numbers
+        vecSum = sum([num for numArr in summationList for num in numArr])
+        rankingScore = normalization * (1 / sqrt(len(intrestedPhrase)) * vecSum)
+        rankedList.append([key, rankingScore])
+    return sorted(rankedList, key=rankBySecondElem, reverse=True)
+
+
+
 #this function will search for phrases based on the users input
-def phraseSearch(doc):
-    listwords=[]
-
-    print("Now the search beings:")
-    keysearch = input("enter a search key, quit by hitting enter twice=>")
-    while (keysearch != ""):
-        keysearch = keysearch.split()
-        for word in keysearch:
-            #print(doc[0][word]['link'])
-            listwords.append(doc[0][word]['link'])
-        listwords = tuple(listwords)
-        print("type of listwords: ", type(listwords))
-        print("list of all words in list: ", listwords)
-
-        intersectionlist=()
-        #this will iterate though out the whole list to compare the documents and only get the ones that
-        #are needed in order to get the best ranked documents for the phrasal search
-        for link in listwords:
-            print("THIS IS I: ", link)
-            for data in link:
-                print("this is J: ", data[0])
-                if(listwords[link][data] == listwords[link+1][data+1]):
-                    intersectionlist = data[0]
-
-        print("SHOULD BE ONLY INTERSECTION DOCUMENTS", intersectionlist)
-        #compare the documents based on the ones that are the same
-
-        #print(type(cleanlist))
-
-       # for item in range(len(listwords) - 1):
-        #    temp= set(listwords[item] & set(listwords[item+1]))
-         #   interlist = interlist & temp
-        #print(interlist)
-
-        #1st is the 1st word[0]
-        #2nd [0] is the list of documents of the word
-        #3rd [0] is only the documments of that word??
-
-        #print("dog: ", listwords[0][0])
-        #print("cat: ", listwords[1])
-
-        # for key, value in doc.items():
-        #    if " " + keysearch + " " in value:
-        #        print("found a match: ./cheDoc/"+str(key))
-
-        keysearch = input("enter a search key=>")
-    print("Bye")
-
-
-
-#def cosineSimRanking(query,relevantDocs):
-
-def webSearch(doc):
-    print("Now the search begins:")
-    keysearch = input("enter a search key=>")
-    while (keysearch != ""):
-        keysearch = keysearch.split()
-        phraseSearch(keysearch)
-        
-        #Traverses through the list if the word matches and,or, or but it'll
-       # conduct the boolean search. Currently only works with 2 terms'''
-        for thing in keysearch:
+def phrasalSearch(query, invertedIndex, docTable):
     
-            if 'and' in keysearch:
-                index = keysearch.index('and')
-                term1 = keysearch[index-1]
-                term2 = keysearch[index+1]
-                if term1 and term2 in doc[0]:
-                    print(doc[0][term1]['link'])
-                    print(doc[0][term2]['link'])
+    # Preform phrasalSearch.
+    # :param query: Search query.
+    # :param invertedIndex: Inverted index
+    # :param docTable: Document table.
+    # :return: List of lists, by correlationg rank.
+    
+    query = query[1:len(query) - 1].lower().strip().split()
+    if checkIndex(query,invertedIndex):
+        print("Continue")
+        if len(query) == 1:
+            print(' '.join(query))
+            booleanSearch(' '.join(query), invertedIndex, docTable)
+            return
+    else:
+        "Last entry not valid."
+    return 0
 
-                    break;
-                            
 
-            elif 'or' in keysearch:
-                index = keysearch.index('or')
-                term1 = keysearch[index-1]
-                term2 = keysearch[index+1]
-                if term1 or term2 in doc[0]:
-                    print(doc[0][term1]['link'])
-                else:
-                    print(doc[0][term2]['link'])
-                    break;
-                            
 
-            elif 'but' in keysearch:
-                index = keysearch.index('but')
-                term1 = keysearch[index-1]
-                term2 = keysearch[index+1]
-                print(doc[0][term1]['link'])
-                break;
-                            
+def booleanSearch(query, invertedIndex, docTable):
+    query = query.split()
+    if "and" in query:
+        relevantDocsTemp = []
+        toBeCleaned = []
+        print("Conducting AND query...")
+        # Get intersecting document set first
+        for word in query:
+            if word != "and":
+                relevantDocsTemp.append([entry[0] for entry in invertedIndex[word]['link']])
+                toBeCleaned.append([[entry[0], entry[3]] for entry in invertedIndex[word]['link']])
+        intersectingDocs = set(relevantDocsTemp[0])
+        for doc in relevantDocsTemp:
+            intersectingDocs = intersectingDocs & set(doc)
+        intersectingDocs = list(intersectingDocs)
 
+        finalOutWithRanking = {}
+        for entry in sum(toBeCleaned,[]):
+            if entry[0] not in finalOutWithRanking:
+                if entry[0] in intersectingDocs:
+                    finalOutWithRanking[entry[0]] = entry[1]
             else:
-                print(doc[0][thing]['link'])
-        keysearch = input("enter a search key=>")
+                finalOutWithRanking[entry[0]] += entry[1]
+        return list(map(list, sorted(list(finalOutWithRanking.items()),key=rankBySecondElem,reverse=True)))
+    else:
+        print("Conducting OR query...")
+        relevantDocsTemp = []
+        for word in query:
+            if word != "or":
+                relevantDocsTemp.append([[entry[0], entry[3]] for entry in invertedIndex[word]['link']])
+        relevantDocsTemp = sum(relevantDocsTemp,[]) # flatten a 2d array
+        relevantDocs = {}  # using dictionary for ease of merging and updating correlations
+        for entry in relevantDocsTemp:
+            if entry[0] not in relevantDocs:
+                relevantDocs[entry[0]] = entry[1]
+            else:
+                relevantDocs[entry[0]] += entry[1]
+        # Note, dictionary was converted into a list of tuples, the finally a list of lists. This is done
+        # in order to ensure consistency with the output in phrasal search.
+        return list(map(list, sorted(list(relevantDocs.items()),key=rankBySecondElem,reverse=True)))
+
+
+
+def checkIndex(query, invertedIndex):
+    
+    # Implementing early stop. Check if query words are in inverted index or not.
+    # :param query:
+    # :param invertedIndex:
+    # :return: True if words can be found, false otherwise.
+    
+    for word in query:
+        if word != "and" or word != "or":
+            if word not in invertedIndex:
+                print(word + " not a valid entry")
+                return False
+    return True
+
+
+
+def webSearch(invertedIndex, docTable):
+    
+    # Web engine console.
+    # :param invertedIndex: Inverted index table.
+    # :param docTable: Table containing doc information
+    # :return:
+    
+    print("Now the search beings:")
+    searchEntry = input("enter a search key=>")
+    while (searchEntry != ""):
+        # Check for phrasal first.
+        if "\"" in searchEntry:
+            print("Preforming phrasal search...")
+            print(phrasalSearch(searchEntry, invertedIndex, docTable))
+        elif len(searchEntry.split()) == 1:
+            print("Only searching for one word...")
+            print(booleanSearch(searchEntry, invertedIndex, docTable))
+        else:
+            print("Preforming boolean search...")
+            print(booleanSearch(searchEntry, invertedIndex, docTable))
+        searchEntry = input("enter a search key=>")
     print("Bye")
+
+
+
 
 if __name__ == '__main__':
-   # unzipContents()
-
-    # Obtain all files in Jan directory
-    #allHTMLFiles = os.listdir('Jan')
-
-    # cd into new Jan directory.
-  #  os.chdir("Jan")
+    # Reading zip file, code segment from Dr. Chen.
+    allHTMLFiles = [name for name in archive.namelist() \
+             if name.endswith('.html') or name.endswith('.htm')]
 
     # Store HTML files into a Dic
-   # completeDocumentsDic = traverseHTML(allHTMLFiles)
+    invertedIndex, documentInformation = traverseHTML(allHTMLFiles)
 
-    #webSearch(completeDocumentsDic)
+    webSearch(invertedIndex, documentInformation)
     
-    #print(completeDocumentsDic[1])
-    #print(completeDocumentsDic[1])
-    #print(completeDocumentsDic[0]['cat'])
-  
-
-
-#if __name__ == "__main__":
     # App execution
     app = QApplication(sys.argv)
     mainui = Ui_MainWindow()
