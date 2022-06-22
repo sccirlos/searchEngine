@@ -27,7 +27,7 @@ def traverseHTML(htmlFiles):
 
     invertedIndexDic = {}
     docTable = {}
-
+    hyperLinksPerHTML = {}
     # Begin creating inverted index and document list (stored in docTable) hash maps.
     for item in htmlFiles:
 
@@ -35,11 +35,14 @@ def traverseHTML(htmlFiles):
         docTable[item] = {
             'doc vec length': 0,
             'max freq': 0,
-            'url': str("./cheDoc/"+str(item))
+            'url': str(item)
         }
 
         with open(item) as file:
             soup = BeautifulSoup(file, "html.parser")
+
+            # Store hyperlinks, may be useful later in Part 3 or can be appended to the docTable
+            hyperLinksPerHTML[item] = [links.get('href') for links in soup.find_all('a', href=True)]
 
             # Tokenize and lower all text
             currentFileText = soup.get_text().lower().split()
@@ -88,6 +91,7 @@ def traverseHTML(htmlFiles):
             for linkData in value['link']:
                 if linkData[0] == doc:
                     docTable[doc]['doc vec length'] += (linkData[3] * linkData[3])
+
     return invertedIndexDic, docTable
 
 def rankBySecondElem(list):
