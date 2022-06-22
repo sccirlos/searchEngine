@@ -134,7 +134,11 @@ def phrasalSearch(query, invertedIndex, docTable):
     :return: List of lists, by correlationg rank.
     """
     query = query[1:len(query) - 1].lower().strip().split()
-    return query
+    if checkIndex(query,invertedIndex):
+        print("Continue")
+    else:
+        "Last entry not valid."
+    return 0
 
 def booleanSearch(query, invertedIndex, docTable):
     query = query.split()
@@ -177,6 +181,19 @@ def booleanSearch(query, invertedIndex, docTable):
         # in order to ensure consistency with the output in phrasal search.
         return list(map(list, sorted(list(relevantDocs.items()),key=rankBySecondElem,reverse=True)))
 
+def checkIndex(query, invertedIndex):
+    """
+    Implementing early stop. Check if query words are in inverted index or not.
+    :param query:
+    :param invertedIndex:
+    :return: True if words can be found, false otherwise.
+    """
+    for word in query:
+        if word != "and" or word != "or":
+            if word not in invertedIndex:
+                print(word + " not a valid entry")
+                return False
+    return True
 def webSearch(invertedIndex, docTable):
     """
     Web engine console.
