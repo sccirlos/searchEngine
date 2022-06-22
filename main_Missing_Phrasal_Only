@@ -136,7 +136,22 @@ def phrasalSearch(query, invertedIndex, docTable):
         if len(query) == 1:
             return booleanSearch(''.join(query), invertedIndex, docTable)
         else:
-            # this needs to be completed
+            # multiple words in phrasal search, first we find relevant documents
+            relevantDocsTemp = []
+            toBeCleaned = []
+            for word in query:
+                relevantDocsTemp = []
+                toBeCleaned = []
+                # Get intersecting document set first, these are the only important docs
+                relevantDocsTemp.append([entry[0] for entry in invertedIndex[word]['link']])
+                toBeCleaned.append([[entry[0], entry[2], entry[3], word] for entry in invertedIndex[word]['link']])
+            intersectingDocs = set(relevantDocsTemp[0])
+            for doc in relevantDocsTemp:
+                intersectingDocs = intersectingDocs & set(doc)
+            intersectingDocs = list(intersectingDocs) # documents containing all words in query
+
+            toBeCleaned = sum(toBeCleaned, [])  # flatten
+            print([entry for entry in toBeCleaned if entry[0] in intersectingDocs])
             return "actual phrasal code goes here"
     else:
         return "Last entry not valid."
