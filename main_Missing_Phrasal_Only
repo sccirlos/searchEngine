@@ -1,5 +1,4 @@
 ##################################################################################################
-
 # Created By: Srikanth Akiti, Sonya Cirlos, Jose Ruben Espinoza, Marlon Martinez, Albert Trevino #
 # Project Title: Web Search Project                                                              #
 # Date Range: Summer I 2022                                                                      #
@@ -162,6 +161,37 @@ def booleanSearch(query, invertedIndex, docTable):
             else:
                 finalOutWithRanking[entry[0]] += entry[1]
         return list(map(list, sorted(list(finalOutWithRanking.items()),key=rankBySecondElem,reverse=True)))
+    elif "but" in query:
+        relevantDocsTemp = []
+        removingDocs = []
+        print("Conducting BUT query...")
+
+        locationOfBut = query.index("but")
+        leftSideOfQuery = query[:locationOfBut]
+        rightideOfQuery = query[locationOfBut + 1:]
+
+        # Get documents that must be in INCLUDED
+        for word in leftSideOfQuery:
+            relevantDocsTemp.append([[entry[0], entry[3]] for entry in invertedIndex[word]['link']])
+        relevantDocsTemp = sum(relevantDocsTemp, [])
+
+        # Get documents that must be REMOVED
+        for word in rightideOfQuery:
+            removingDocs.append([entry[0] for entry in invertedIndex[word]['link']])
+        removingDocs = sum(removingDocs, [])
+        relevantDocs = [finalDocs for finalDocs in relevantDocsTemp if finalDocs[0] not in removingDocs]
+
+        # final Ranking
+        finalOutWithRanking = {}
+        for entry in relevantDocs:
+            if entry[0] not in finalOutWithRanking:
+                finalOutWithRanking[entry[0]] = entry[1]
+            else:
+                finalOutWithRanking[entry[0]] += entry[1]
+        # Note, dictionary was converted into a list of tuples, the finally a list of lists. This is done
+        # in order to ensure consistency with the output in phrasal search.
+        return list(map(list, sorted(list(finalOutWithRanking.items()),key=rankBySecondElem,reverse=True)))
+
     else:
         print("Conducting OR query...")
         relevantDocsTemp = []
