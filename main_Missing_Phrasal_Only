@@ -7,18 +7,12 @@
 ##################################################################################################
 
 # Import necessary libraries
-import os
-import zipfile
+from zipfile import ZipFile
 from bs4 import BeautifulSoup
 from math import log2, sqrt
 
-# Unzip Jan.zip if necessary. "Folder already there..." prints if the extracted folder is already present.
-def unzipContents():
-    if 'cheDoc' not in os.listdir():
-        with zipfile.ZipFile('cheDoc.zip', 'r') as zip_ref:
-            zip_ref.extractall()
-    else:
-        print("Folder already there...")
+# Store zip file in archive
+archive = ZipFile('cheDoc.zip', 'r')
 
 def traverseHTML(htmlFiles):
     """
@@ -136,6 +130,10 @@ def phrasalSearch(query, invertedIndex, docTable):
     query = query[1:len(query) - 1].lower().strip().split()
     if checkIndex(query,invertedIndex):
         print("Continue")
+        if len(query) == 1:
+            print(' '.join(query))
+            booleanSearch(' '.join(query), invertedIndex, docTable)
+            return
     else:
         "Last entry not valid."
     return 0
@@ -203,7 +201,6 @@ def webSearch(invertedIndex, docTable):
     """
     print("Now the search beings:")
     searchEntry = input("enter a search key=>")
-
     while (searchEntry != ""):
         # Check for phrasal first.
         if "\"" in searchEntry:
@@ -219,13 +216,10 @@ def webSearch(invertedIndex, docTable):
     print("Bye")
 
 if __name__ == '__main__':
-    unzipContents()
 
-    # Obtain all files in Jan directory
-    allHTMLFiles = os.listdir('cheDoc')
-
-    # cd into new Jan directory.
-    os.chdir("cheDoc")
+    # Reading zip file, code segment from Dr. Chen.
+    allHTMLFiles = [name for name in archive.namelist() \
+             if name.endswith('.html') or name.endswith('.htm')]
 
     # Store HTML files into a Dic
     invertedIndex, documentInformation = traverseHTML(allHTMLFiles)
