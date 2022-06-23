@@ -38,7 +38,7 @@ def traverseHTML(htmlFiles):
             'url': str(item)
         }
 
-        with open(item) as file:
+        with archive.open(item) as file:
             soup = BeautifulSoup(file, "html.parser")
 
             # Store hyperlinks, may be useful later in Part 3 or can be appended to the docTable
