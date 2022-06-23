@@ -13,10 +13,12 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 
 
 # Import necessary libraries
-import os
 from zipfile import ZipFile
 from bs4 import BeautifulSoup
 from math import log2, sqrt
+
+
+
 
 
 
@@ -35,12 +37,12 @@ class Ui_MainWindow(QMainWindow, mainwindow.Ui_MainWindow):
         widget.addWidget(results)
         widget.setCurrentIndex(widget.currentIndex()+1) #stack of screens
 
-    def getQueryandSearch(self, doc):
+    def getQueryandSearch(self):
           # get query input
         query = self.lineEdit.text()
         
 
-# displays results like completedocumentdictionary  
+# displays results 
 # results screen needs a go back to search button or something
 class Ui_resultsUI(QDialog, searchresultsUI.Ui_resultsUI):
     def __init__(self):
@@ -49,9 +51,9 @@ class Ui_resultsUI(QDialog, searchresultsUI.Ui_resultsUI):
         #self.pushButton.clicked.connect(self.getuserQuery)
         
    
-
 # Store zip file in archive
 archive = ZipFile('cheDoc.zip', 'r')
+
 
 
 # Traverse HTML files, returns a inverted index hash table.
@@ -68,19 +70,23 @@ def traverseHTML(htmlFiles):
 
     invertedIndexDic = {}
     docTable = {}
-
+    hyperLinksPerHTML = {}
     # Begin creating inverted index and document list (stored in docTable) hash maps.
     for item in htmlFiles:
+
 
         # Initialize the creation of the document list.
         docTable[item] = {
             'doc vec length': 0,
             'max freq': 0,
-            'url': str("./cheDoc/"+str(item))
+            'url': str(item)
         }
 
-        with open(item) as file:
+        with archive.open(item) as file:
             soup = BeautifulSoup(file, "html.parser")
+
+             # Store hyperlinks, may be useful later in Part 3 or can be appended to the docTable
+            hyperLinksPerHTML[item] = [links.get('href') for links in soup.find_all('a', href=True)]
 
             # Tokenize and lower all text
             currentFileText = soup.get_text().lower().split()
@@ -179,48 +185,83 @@ def phrasalSearch(query, invertedIndex, docTable):
         "Last entry not valid."
     return 0
 
-
-
 def booleanSearch(query, invertedIndex, docTable):
-    query = query.split()
-    if "and" in query:
-        relevantDocsTemp = []
-        toBeCleaned = []
-        print("Conducting AND query...")
-        # Get intersecting document set first
-        for word in query:
-            if word != "and":
-                relevantDocsTemp.append([entry[0] for entry in invertedIndex[word]['link']])
-                toBeCleaned.append([[entry[0], entry[3]] for entry in invertedIndex[word]['link']])
-        intersectingDocs = set(relevantDocsTemp[0])
-        for doc in relevantDocsTemp:
-            intersectingDocs = intersectingDocs & set(doc)
-        intersectingDocs = list(intersectingDocs)
+    if type(query) != list():
+        query = query.split()
 
-        finalOutWithRanking = {}
-        for entry in sum(toBeCleaned,[]):
-            if entry[0] not in finalOutWithRanking:
-                if entry[0] in intersectingDocs:
-                    finalOutWithRanking[entry[0]] = entry[1]
-            else:
-                finalOutWithRanking[entry[0]] += entry[1]
-        return list(map(list, sorted(list(finalOutWithRanking.items()),key=rankBySecondElem,reverse=True)))
-    else:
-        print("Conducting OR query...")
-        relevantDocsTemp = []
-        for word in query:
-            if word != "or":
+    if checkIndex(query, invertedIndex):
+        if "and" in query:
+            relevantDocsTemp = []
+            toBeCleaned = []
+            print("Conducting AND query...")
+            # Get intersecting document set first
+            for word in query:
+                if word != "and":
+                    relevantDocsTemp.append([entry[0] for entry in invertedIndex[word]['link']])
+                    toBeCleaned.append([[entry[0], entry[3]] for entry in invertedIndex[word]['link']])
+            intersectingDocs = set(relevantDocsTemp[0])
+            for doc in relevantDocsTemp:
+                intersectingDocs = intersectingDocs & set(doc)
+            intersectingDocs = list(intersectingDocs)
+
+            finalOutWithRanking = {}
+            for entry in sum(toBeCleaned,[]):
+                if entry[0] not in finalOutWithRanking:
+                    if entry[0] in intersectingDocs:
+                        finalOutWithRanking[entry[0]] = entry[1]
+                else:
+                    finalOutWithRanking[entry[0]] += entry[1]
+            return list(map(list, sorted(list(finalOutWithRanking.items()),key=rankBySecondElem,reverse=True)))
+        elif "but" in query:
+            relevantDocsTemp = []
+            removingDocs = []
+            print("Conducting BUT query...")
+
+            locationOfBut = query.index("but")
+            leftSideOfQuery = query[:locationOfBut]
+            rightideOfQuery = query[locationOfBut + 1:]
+
+            # Get documents that must be in INCLUDED
+            for word in leftSideOfQuery:
                 relevantDocsTemp.append([[entry[0], entry[3]] for entry in invertedIndex[word]['link']])
-        relevantDocsTemp = sum(relevantDocsTemp,[]) # flatten a 2d array
-        relevantDocs = {}  # using dictionary for ease of merging and updating correlations
-        for entry in relevantDocsTemp:
-            if entry[0] not in relevantDocs:
-                relevantDocs[entry[0]] = entry[1]
-            else:
-                relevantDocs[entry[0]] += entry[1]
-        # Note, dictionary was converted into a list of tuples, the finally a list of lists. This is done
-        # in order to ensure consistency with the output in phrasal search.
-        return list(map(list, sorted(list(relevantDocs.items()),key=rankBySecondElem,reverse=True)))
+            relevantDocsTemp = sum(relevantDocsTemp, [])
+
+            # Get documents that must be REMOVED
+            for word in rightideOfQuery:
+                removingDocs.append([entry[0] for entry in invertedIndex[word]['link']])
+            removingDocs = sum(removingDocs, [])
+            relevantDocs = [finalDocs for finalDocs in relevantDocsTemp if finalDocs[0] not in removingDocs]
+
+            # final Ranking
+            finalOutWithRanking = {}
+            for entry in relevantDocs:
+                if entry[0] not in finalOutWithRanking:
+                    finalOutWithRanking[entry[0]] = entry[1]
+                else:
+                    finalOutWithRanking[entry[0]] += entry[1]
+            # Note, dictionary was converted into a list of tuples, the finally a list of lists. This is done
+            # in order to ensure consistency with the output in phrasal search.
+            return list(map(list, sorted(list(finalOutWithRanking.items()),key=rankBySecondElem,reverse=True)))
+        else:
+            print("Conducting OR query...")
+            print(query)
+            relevantDocsTemp = []
+            for word in query:
+                if word != "or":
+                    relevantDocsTemp.append([[entry[0], entry[3]] for entry in invertedIndex[word]['link']])
+            relevantDocsTemp = sum(relevantDocsTemp,[]) # flatten a 2d array
+            relevantDocs = {}  # using dictionary for ease of merging and updating correlations
+            for entry in relevantDocsTemp:
+                if entry[0] not in relevantDocs:
+                    relevantDocs[entry[0]] = entry[1]
+                else:
+                    relevantDocs[entry[0]] += entry[1]
+            # Note, dictionary was converted into a list of tuples, the finally a list of lists. This is done
+            # in order to ensure consistency with the output in phrasal search.
+            return list(map(list, sorted(list(relevantDocs.items()),key=rankBySecondElem,reverse=True)))
+    else:
+        return "Your word is not in the inverted index."
+
 
 
 
