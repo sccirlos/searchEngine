@@ -103,7 +103,7 @@ def rankBySecondElem(list):
     return list[1]
 
 
-def cosineSimRanking(intrestedPhrase, relevantDocs):
+def cosineSimRanking(intrestedPhrase, relevantDocs,invertedIndex, intersectinglist):
     """
     Ranks preform cosine similarity ranking.
     :param intrestedPhrase: User query must be preprocessed as a list of words
@@ -111,15 +111,17 @@ def cosineSimRanking(intrestedPhrase, relevantDocs):
     :return: Sorted rank list with entries [docid, cosine similarity score].
     """
     rankedList = []
-    for key, value in relevantDocs[1].items():
+    print(intersectinglist)
+    for key, value in relevantDocs.items():
         normalization = 1 / sqrt(value['doc vec length'])
         summationList = []
-        for word in intrestedPhrase:
-            summationList.append([num[3] for num in relevantDocs[0][word]['link'] if num[0] == key])
-        # flatten summationList, then sum numbers
-        vecSum = sum([num for numArr in summationList for num in numArr])
-        rankingScore = normalization * (1 / sqrt(len(intrestedPhrase)) * vecSum)
-        rankedList.append([key, rankingScore])
+        if key in intersectinglist:
+            for word in intrestedPhrase:
+                summationList.append([num[3] for num in invertedIndex[word]['link'] if num[0] == key])
+            # flatten summationList, then sum numbers
+            vecSum = sum([num for numArr in summationList for num in numArr])
+            rankingScore = normalization * (1 / sqrt(len(intrestedPhrase)) * vecSum)
+            rankedList.append([key, rankingScore])
     return sorted(rankedList, key=rankBySecondElem, reverse=True)
 
 def phrasalSearch(query, invertedIndex, docTable):
@@ -141,7 +143,6 @@ def phrasalSearch(query, invertedIndex, docTable):
             toBeCleaned = []
             for word in query:
                 # Get intersecting document set first, these are the only important docs
-                print(invertedIndex[word]['link'])
                 relevantDocsTemp.append([entry[0] for entry in invertedIndex[word]['link']])
                 toBeCleaned.append([[entry[0], entry[2], entry[3], word] for entry in invertedIndex[word]['link']])
             intersectingDocs = set(relevantDocsTemp[0])
@@ -149,11 +150,24 @@ def phrasalSearch(query, invertedIndex, docTable):
                 intersectingDocs = intersectingDocs & set(doc)
             intersectingDocs = list(intersectingDocs) # documents containing all words in query
 
-            toBeCleaned = sum(toBeCleaned, [])  # flatten
-            relevantDocs = [entry for entry in toBeCleaned if entry[0] in intersectingDocs]
-            # code missing here
-            print("below we have a list of relevant information for word positions")
-            return relevantDocs
+            # From using the idea of dictionaries within dictionaries to get positions easily.
+            positionalDictionary = {}
+            for entry in sum(toBeCleaned, []):
+                if entry[0] not in positionalDictionary:
+                    positionalDictionary[entry[0]] = {
+                        'word': {entry[3]: entry[1]}
+                    }
+                elif entry[3] not in positionalDictionary[entry[0]]['word']:
+                    positionalDictionary[entry[0]]['word'].update({entry[3]: entry[1]})
+            for entry in intersectingDocs:
+                for num in range(0, len(query) - 1):
+                    startArr = positionalDictionary[entry]['word'][query[num]]
+                    inNextArr = any(item in list(map(lambda x: x + 1, startArr)) \
+                                    for item in positionalDictionary[entry]['word'][query[num + 1]])
+                    if not inNextArr:
+                        return "Phrase not found"
+            # only calculate cosine for relevant documents
+            return cosineSimRanking(query, docTable, invertedIndex, intersectingDocs)
     else:
         return "Last entry not valid."
 
@@ -216,7 +230,6 @@ def booleanSearch(query, invertedIndex, docTable):
             return list(map(list, sorted(list(finalOutWithRanking.items()),key=rankBySecondElem,reverse=True)))
         else:
             print("Conducting OR query...")
-            print(query)
             relevantDocsTemp = []
             for word in query:
                 if word != "or":
