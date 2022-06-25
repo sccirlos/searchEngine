@@ -4,65 +4,22 @@
 # Date Range: Summer I 2022                                                                      #
 # Short Description: Web search engine implementation using an inverted index tables.            #
 ##################################################################################################
-# import libraries for interface
-import sys
-import mainwindow
-import searchresultsUI
-from PyQt5.QtWidgets import QDialog, QApplication, QWidget, QMainWindow, QStackedWidget, QLineEdit
-from PyQt5 import QtCore, QtGui, QtWidgets
-
 
 # Import necessary libraries
 from zipfile import ZipFile
 from bs4 import BeautifulSoup
 from math import log2, sqrt
 
-
-
-
-
-
-# adding mainwindow screen
-class Ui_MainWindow(QMainWindow, mainwindow.Ui_MainWindow):
-    def __init__(self):
-      super().__init__()
-      self.setupUi(self)
-     
-      self.pushButton.clicked.connect(self.gotoSearchPage)
-      self.pushButton.clicked.connect(self.getQueryandSearch) # when search button is clicked it will connect to gotosearch()
-
-
-    def gotoSearchPage(self):
-        results = Ui_resultsUI()
-        widget.addWidget(results)
-        widget.setCurrentIndex(widget.currentIndex()+1) #stack of screens
-
-    def getQueryandSearch(self):
-          # get query input
-        query = self.lineEdit.text()
-        
-
-# displays results 
-# results screen needs a go back to search button or something
-class Ui_resultsUI(QDialog, searchresultsUI.Ui_resultsUI):
-    def __init__(self):
-        super().__init__()
-        self.setupUi(self)
-        #self.pushButton.clicked.connect(self.getuserQuery)
-        
-   
 # Store zip file in archive
 archive = ZipFile('cheDoc.zip', 'r')
 
-
-
-# Traverse HTML files, returns a inverted index hash table.
 def traverseHTML(htmlFiles):
-    
+    # """
     # Traverse html files returning inverted index table and a document table
     # :param htmlFiles: Given zip file containing html files.
     # :return: inverted index table and document table
-    
+    # """
+
     # Removal of stop words to be used later.
     stop_words = ['a', 'an', 'the', 'of']
 
@@ -74,7 +31,6 @@ def traverseHTML(htmlFiles):
     # Begin creating inverted index and document list (stored in docTable) hash maps.
     for item in htmlFiles:
 
-
         # Initialize the creation of the document list.
         docTable[item] = {
             'doc vec length': 0,
@@ -85,7 +41,7 @@ def traverseHTML(htmlFiles):
         with archive.open(item) as file:
             soup = BeautifulSoup(file, "html.parser")
 
-             # Store hyperlinks, may be useful later in Part 3 or can be appended to the docTable
+            # Store hyperlinks, may be useful later in Part 3 or can be appended to the docTable
             hyperLinksPerHTML[item] = [links.get('href') for links in soup.find_all('a', href=True)]
 
             # Tokenize and lower all text
@@ -135,39 +91,41 @@ def traverseHTML(htmlFiles):
             for linkData in value['link']:
                 if linkData[0] == doc:
                     docTable[doc]['doc vec length'] += (linkData[3] * linkData[3])
+
     return invertedIndexDic, docTable
 
-
-
 def rankBySecondElem(list):
+    # """
     # Helper function to be used in cosineSimRanking.
     # :param list: list of the form [[docid1, rankingScore1], [docod2, rankingScore2]...
     # :return: Sorted list by second entry.
+    # """
     return list[1]
 
 
-def cosineSimRanking(intrestedPhrase, relevantDocs):
+def cosineSimRanking(intrestedPhrase, relevantDocs,invertedIndex, intersectinglist):
+    # """
     # Ranks preform cosine similarity ranking.
     # :param intrestedPhrase: User query must be preprocessed as a list of words
     # :param relevantDocs: Hash table of document information
     # :return: Sorted rank list with entries [docid, cosine similarity score].
-    rankedList = []
-    for key, value in relevantDocs[1].items():
-        normalization = 1 / sqrt(value['doc vec length'])
-        summationList = []
-        for word in intrestedPhrase:
-            summationList.append([num[3] for num in relevantDocs[0][word]['link'] if num[0] == key])
-        # flatten summationList, then sum numbers
-        vecSum = sum([num for numArr in summationList for num in numArr])
-        rankingScore = normalization * (1 / sqrt(len(intrestedPhrase)) * vecSum)
-        rankedList.append([key, rankingScore])
-    return sorted(rankedList, key=rankBySecondElem, reverse=True)
+#     """
+#     rankedList = []
+#     print(intersectinglist)
+#     for key, value in relevantDocs.items():
+#         normalization = 1 / sqrt(value['doc vec length'])
+#         summationList = []
+#         if key in intersectinglist:
+#             for word in intrestedPhrase:
+#                 summationList.append([num[3] for num in invertedIndex[word]['link'] if num[0] == key])
+#             # flatten summationList, then sum numbers
+#             vecSum = sum([num for numArr in summationList for num in numArr])
+#             rankingScore = normalization * (1 / sqrt(len(intrestedPhrase)) * vecSum)
+#             rankedList.append([key, rankingScore])
+#     return sorted(rankedList, key=rankBySecondElem, reverse=True)
 
-
-
-#this function will search for phrases based on the users input
-def phrasalSearch(query, invertedIndex, docTable):
-    
+# def phrasalSearch(query, invertedIndex, docTable):
+#     # """
     # Preform phrasalSearch.
     # :param query: Search query.
     # :param invertedIndex: Inverted index
@@ -175,15 +133,43 @@ def phrasalSearch(query, invertedIndex, docTable):
     # :return: List of lists, by correlationg rank.
     
     query = query[1:len(query) - 1].lower().strip().split()
+
     if checkIndex(query,invertedIndex):
-        print("Continue")
         if len(query) == 1:
-            print(' '.join(query))
-            booleanSearch(' '.join(query), invertedIndex, docTable)
-            return
+            return booleanSearch(''.join(query), invertedIndex, docTable)
+        else:
+            # multiple words in phrasal search, first we find relevant documents
+            relevantDocsTemp = []
+            toBeCleaned = []
+            for word in query:
+                # Get intersecting document set first, these are the only important docs
+                relevantDocsTemp.append([entry[0] for entry in invertedIndex[word]['link']])
+                toBeCleaned.append([[entry[0], entry[2], entry[3], word] for entry in invertedIndex[word]['link']])
+            intersectingDocs = set(relevantDocsTemp[0])
+            for doc in relevantDocsTemp:
+                intersectingDocs = intersectingDocs & set(doc)
+            intersectingDocs = list(intersectingDocs) # documents containing all words in query
+
+            # From using the idea of dictionaries within dictionaries to get positions easily.
+            positionalDictionary = {}
+            for entry in sum(toBeCleaned, []):
+                if entry[0] not in positionalDictionary:
+                    positionalDictionary[entry[0]] = {
+                        'word': {entry[3]: entry[1]}
+                    }
+                elif entry[3] not in positionalDictionary[entry[0]]['word']:
+                    positionalDictionary[entry[0]]['word'].update({entry[3]: entry[1]})
+            for entry in intersectingDocs:
+                for num in range(0, len(query) - 1):
+                    startArr = positionalDictionary[entry]['word'][query[num]]
+                    inNextArr = any(item in list(map(lambda x: x + 1, startArr)) \
+                                    for item in positionalDictionary[entry]['word'][query[num + 1]])
+                    if not inNextArr:
+                        return "Phrase not found"
+            # only calculate cosine for relevant documents
+            return cosineSimRanking(query, docTable, invertedIndex, intersectingDocs)
     else:
-        "Last entry not valid."
-    return 0
+        return "Last entry not valid."
 
 def booleanSearch(query, invertedIndex, docTable):
     if type(query) != list():
@@ -244,7 +230,6 @@ def booleanSearch(query, invertedIndex, docTable):
             return list(map(list, sorted(list(finalOutWithRanking.items()),key=rankBySecondElem,reverse=True)))
         else:
             print("Conducting OR query...")
-            print(query)
             relevantDocsTemp = []
             for word in query:
                 if word != "or":
@@ -262,9 +247,6 @@ def booleanSearch(query, invertedIndex, docTable):
     else:
         return "Your word is not in the inverted index."
 
-
-
-
 def checkIndex(query, invertedIndex):
     
     # Implementing early stop. Check if query words are in inverted index or not.
@@ -273,14 +255,11 @@ def checkIndex(query, invertedIndex):
     # :return: True if words can be found, false otherwise.
     
     for word in query:
-        if word != "and" or word != "or":
+        if word != "and" or word != "or" or word != "but":
             if word not in invertedIndex:
                 print(word + " not a valid entry")
                 return False
     return True
-
-
-
 def webSearch(invertedIndex, docTable):
     
     # Web engine console.
@@ -304,10 +283,8 @@ def webSearch(invertedIndex, docTable):
         searchEntry = input("enter a search key=>")
     print("Bye")
 
-
-
-
 if __name__ == '__main__':
+
     # Reading zip file, code segment from Dr. Chen.
     allHTMLFiles = [name for name in archive.namelist() \
              if name.endswith('.html') or name.endswith('.htm')]
@@ -316,14 +293,3 @@ if __name__ == '__main__':
     invertedIndex, documentInformation = traverseHTML(allHTMLFiles)
 
     webSearch(invertedIndex, documentInformation)
-    
-    # App execution
-    app = QApplication(sys.argv)
-    mainui = Ui_MainWindow()
-    widget = QStackedWidget()
-    widget.addWidget(mainui)
-    widget.setFixedHeight(600)
-    widget.setFixedWidth(800)
-    widget.show()
-    sys.exit(app.exec_())
-    
