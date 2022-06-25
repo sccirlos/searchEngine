@@ -160,13 +160,16 @@ def phrasalSearch(query, invertedIndex, docTable):
                 elif entry[3] not in positionalDictionary[entry[0]]['word']:
                     positionalDictionary[entry[0]]['word'].update({entry[3]: entry[1]})
             for entry in intersectingDocs:
-                for num in range(0, len(query) - 1):
+                for num in range(0, len(query)-1):
                     startArr = positionalDictionary[entry]['word'][query[num]]
                     inNextArr = any(item in list(map(lambda x: x + 1, startArr)) \
                                     for item in positionalDictionary[entry]['word'][query[num + 1]])
-                    if not inNextArr:
+                    print(positionalDictionary[entry]['word'])
+                              
+                    if not intersectingDocs:
                         return "Phrase not found"
             # only calculate cosine for relevant documents
+            
             return cosineSimRanking(query, docTable, invertedIndex, intersectingDocs)
     else:
         return "Last entry not valid."
