@@ -11,7 +11,7 @@ from bs4 import BeautifulSoup
 from math import log2, sqrt
 
 # Store zip file in archive
-archive = ZipFile('cheDoc.zip', 'r')
+archive = ZipFile('rhf.zip', 'r')
 
 def traverseHTML(htmlFiles):
     """
